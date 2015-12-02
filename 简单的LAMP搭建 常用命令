@@ -1,0 +1,173 @@
+简单的LAMP搭建 常用命令
+
+开发 2015-11-27 3:43 T0n9@X1a0J1e 0 Comments
+（1）使用配置文件配置ip地址。
+给网卡设置ip地址，使用网卡的配置文件，
+第一块网卡的配置文件：/etc/sysconfig/network-scripts/ifcfg-eth0 
+第二块网卡的配置文件：/etc/sysconfig/network-scripts/ifcfg-eth1
+使用vi编辑器，打开该配置文件。
+
+DEVICE        :网卡的设备名称
+HWADDR        :网卡的物理地址（mac）
+ONBOOT        :设置为yes则系统启动时，网卡也跟着启动
+IPADDR        :ip地址
+NETMASK    :网卡的子网掩码
+BOOTPROTO    ：网卡的设置方式，static静态方式，我们自己设置ip地址，如何dhcp动态获取。
+TYPE            : 网络的类型，以太网。
+注意：配置linux里面的ip地址不要和window主机的 ip地址重复。
+
+
+挂载光驱
+挂载光驱就是读取光驱里面的数据。
+
+光驱的硬件位置：/dev/cdrom 
+在系统里边需要一个目录，让其与光驱硬件进行挂载，建立映射关系，通读取该目录，就读取里面光驱里面的内容。 
+语法： 
+mount  硬件设备  挂载点 
+卸载： 
+umount  硬件设备|挂载点 
+
+（1）需要把光盘加载到光驱里面（如果是真实的机器，直接把光盘放到光驱里面即可）
+（2）新建一个目录，该目录用于和光驱硬件建立映射关系。
+（3）开始挂载，使用新建的目录与光驱的硬件建立映射关系。
+语法： 
+mount  硬件设备  挂载点(新建的目录) 
+mount  /dev/cdrom  /cdrom
+出现如下提示，表示挂载成功。
+（4）挂载成功后，读取/cdrom目录，就读取里了光盘里面的内容。
+（5）取消挂载
+新建一个文件夹用于挂在
+umount  硬件设备|挂载点 
+umoutn  /dev/cdrom   或  umount   /cdrom
+
+安装FTP服务
+1、软件安装方式： 
+（1）.rpm    :二进制软件包 
+安装简单，安装速度快 
+缺点：自定义性差，依赖性强 
+比如：安装a 软件，提示要先安装 b 软件，安装b软件，又提示安装 c软件，安装c软件，又提示安装d软件。
+（2）.tar.gz    :源代码编译安装 
+开源，自由定制 
+缺点：编译时间较长，一旦报错解决困难。 
+（3）智能 yum方式 
+特点：解决了依赖性，要求服务器有网络，不灵活，不可以设置自己需要的具体软件版本。 
+2、 RPM软件包安装语法： 
+安装： 
+rpm  –ivh  包全名 
+-i     安装
+-v    :显示详细信息
+-h    :显示进度 
+卸载语法：
+rpm –e 软件名
+--nodeps 不检测依赖性
+查询软件包是否安装
+rpm –qa 软件名
+-a 查询所有已经安装的软件包
+
+使用rpm包开始安装FTP服务：
+注意：rpm包在linux的安装光盘里面。
+（1）挂载光驱，读取光盘里面的数据。
+（2）开启安装，
+前提：已经要进入到光盘里面的Packages文件夹
+语法：rpm  –ivh  包全名 
+（3）要启动ftp服务，
+     service vsftpd start
+（4）使用ftp客户端软件，进行连接，上传文件。
+注意：root用户默认不能登录ftp服务的。
+如果出现如下提示500的错误提示。：
+原因：redhat面向目标是企业，为了安全，增加了一个selinux 服务，关闭该服务即可。 
+在 /etc/selinux/config 
+把enforcing=>disabled
+运行setenforce 0命令使立即生效
+关闭selinux 服务的步骤：
+第一步：使用vi  打开配置文件/etc/selinux/config
+第二步：让该配置立即生效，运行setenforce 0命令使立即生效
+再次连接ftp服务，就成功了。
+ 
+1）安装apache
+#软件版本为httpd-2.2.9.tar.gz
+shell> cd /usr/local/src
+shell> tar -zxvf httpd-2.2.9.tar.gz
+shell> cd httpd-2.2.9
+ shell>./configure --prefix=/usr/local/apache  \
+    --enable-modules=all \
+    --enable-rewrite \
+    --enable-mods-shared=all \
+    --enable-so
+shell> make 
+shell> make install
+
+#启动Apache
+/usr/local/apache/bin/apachectl start
+开启服务：/usr/local/apache/bin/apachectl start|stop|restart
+
+#查看是否启动成功
+netstat -tunpl | grep 80
+#测试apache
+浏览器打开: http://虚拟机IP 
+看到 "it works!",即为成功
+
+2): 编译安装MySQL
+软件版本：mysql-5.1.58.tar.gz
+shell>groupadd mysql
+shell>useradd mysql -g mysql
+shell>tar -zxvf mysql-5.1.58.tar.gz
+shell>cd mysql-5.1.58
+#配置mysql编译选项，指定安装路径及支持的字符集
+shell>./configure --prefix=/usr/local/mysql \
+    --with-charset=utf8 \
+    --with-extra-charsets=gbk,gb2312,binary
+#编译安装
+shell>make
+shell>make install
+#配置并初始化mysql
+shell>cp support-files/my-medium.cnf /etc/my.cnf
+shell>cd /usr/local/mysql
+#初始化数据库
+shell>./bin/mysql_install_db --user=mysql \
+    --datadir=/usr/local/mysql/data
+
+
+#为了安全，把所有文件修改为root用户所有，
+shell>chown -R root .
+#把data目录修改为mysql用户所有
+shell>chown -R mysql data
+shell>chgrp -R mysql .
+#启动mysql服务
+shell>bin/mysqld_safe --user=mysql &
+#测试服务器，并设置mysql root用户密码
+use mysql
+update user set password=PASSWORD('root') where user='root'
+#清空权限缓存，使更改立即生效。
+flush privileges
+
+3)安装php
+shell>tar -zxvf php
+shell>cd php
+shell>./configure --prefix=/usr/local/php \
+    --with-apxs2=/usr/local/apache/bin/apxs \
+    --with-mysql=/usr/local/mysql
+shell>make && make install
+
+4)整合LAMP
+# 打开apache配置文件，添加AddType
+LoadModule php5_module modules/libphp5.so
+AddType application/x-httpd-php .php
+
+cp php-5.2.5/php.ini-dist /usr/local/php/lib/php.ini
+5)把apache和mysql配置为开机启动。
+打开 /etc/rc.local,linux系统每次启动后都会自动执行这个文件，在该文件中，加入以下两行内容：
+/usr/local/apache/bin/apachectl start
+/usr/local/mysql/bin/mysql_safe --user=mysql &
+
+
+
+该socket文件，在/var/lib/mysql/mysql.sock
+
+
+
+报错  /tmp/mysql.sock
+
+解决 
+在my.cnf 里面添加 datadir=mysq data路径 如:
+          datadir=/usr/local/mysql/data
