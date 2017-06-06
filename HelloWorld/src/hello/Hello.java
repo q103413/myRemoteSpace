@@ -5,6 +5,6 @@ public class Hello {
 		System.out.println("te");
 	}
 	public void test1() {
-		System.out.println("java");
+		System.out.println("java+t");
 	}
 }
